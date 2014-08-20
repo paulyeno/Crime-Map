@@ -1,5 +1,5 @@
 library(shiny);library(plyr);library(rCharts)
-#data from data.police.uk for City of London Police, June 2014
+#data from data.police.uk for City of London Police for June 2014
 data<-read.csv("2014-06-city-of-london-street.csv")[,c(5:6,10:11)]
 addy<-NULL
 for(i in 1:nrow(data)){addy[i]<-paste(data[i,1],data[i,2])}
