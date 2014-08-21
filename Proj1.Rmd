@@ -1,0 +1,68 @@
+---
+title: "Crime Map"
+output: html_document
+---
+### Introduction
+
+Crime Map is a simple application created with R and Shiny for the Coursera Developing Data Products Class.  This app shows the location and count of various categories of crimes based on the data from the UK Home Office, downloadable from [http://data.police.uk/data](http://data.police.uk/data).  The app itself may be found at [http://paulyeno.shinyapps.io/Crime-Map](http://paulyeno.shinyapps.io/Crime-Map).For purposes of this exercise, data from June, 2014 (the most recent available at the time of this writing) were used.  
+
+### Use
+
+Using the dropdown menu on the left of the page, select they type of crime you could like to plot on the map, either "Vehicle crime", "Violence and sexual offences", "Anti-social behaviour", "Bicycle theft", "Other theft", "Theft from the person", "Criminal damage and arson", "Other crime", "Drugs", "Burglary", "Public order", "Shoplifting", "Robbery", or "Possession of weapons".  Once you make this selection, the map will display markers for the locations where this type of crime occurred within the dataset.
+
+Once the markers are displayed, clicking on one of the will show the number of crimes in that location of the selected type.
+
+### Code
+
+For reference, the server.R file used was:
+
+
+```{r,eval=FALSE}
+library(shiny);library(plyr);library(rCharts)
+#data from data.police.uk for City of London Police for June 2014
+data<-read.csv("2014-06-city-of-london-street.csv")[,c(5:6,10:11)]
+addy<-NULL
+for(i in 1:nrow(data)){addy[i]<-paste(data[i,1],data[i,2])}
+data<-cbind(data,addy)
+rm(addy)
+shinyServer(function(input,output){
+  output$DotMap<-renderMap({
+    dt<-subset(data,Crime.type==input$type,
+      select=c("Longitude","Latitude","addy")
+    )
+    names(dt)<-c("lon","lat","addy")
+    dt2<-ddply(dt,.(lat, lon), summarise, count = length(addy))
+    alon<-median(dt[,1],na.rm=T)
+    alat<-median(dt[,2],na.rm=T)
+    dt<-dt2
+    dt<-toJSONArray2(na.omit(dt), json = F, names = F)
+    DotMap<-Leaflet$new()
+    DotMap$setView(c(alat,alon), 14)
+    DotMap$tileLayer(provider = "OpenStreetMap")
+    for(i in 1:nrow(dt2)){
+      DotMap$marker(c(dt2[i,1],dt2[i,2]),
+        bindPopup=paste(dt2[i,3],"incidence(s) of",input$type))
+    }
+    DotMap
+  })
+})
+```
+
+and the ui.R file was:
+
+```{r, eval=FALSE}
+library(shiny);library(rCharts)
+shinyUI(fluidPage(fluidRow(
+  column(4,selectInput("type","Type of Crime",choices=c("Vehicle crime",
+    "Violence and sexual offences","Anti-social behaviour","Bicycle theft",
+    "Other theft","Theft from the person","Criminal damage and arson",
+    "Other crime","Drugs","Burglary","Public order","Shoplifting","Robbery",
+    "Possession of weapons"),
+    selected=NULL
+    )
+  ),
+  column(8,chartOutput('DotMap','leaflet'))
+  )
+  )
+)
+```
