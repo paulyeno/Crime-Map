@@ -1,0 +1,10 @@
+base
+datasets
+graphics
+grDevices
+methods
+plyr
+rCharts
+shiny
+stats
+utils
